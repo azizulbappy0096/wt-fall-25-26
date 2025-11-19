@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab Task 2</title>
+  </head>
+  <body>
+    <h1>Student Grade Management System</h1>
+    <p>Track and manage student grades efficiently</p>
+
+    <section>
+      <h2>Add New Student</h2>
+      <form id="studentForm" action="#">
+        <div>
+          <label for="name">Student Name:</label>
+          <input
+            id="name"
+            type="text"
+            required
+            placeholder="Enter student name"
+          />
+        </div>
+        <div>
+          <label for="grade">Grade (0-100):</label>
+          <input
+            id="grade"
+            type="number"
+            min="0"
+            max="100"
+            required
+            placeholder="Enter grade"
+          />
+        </div>
+        <div>
+          <input type="submit" value="Add Student" />
+          <input id="clearForm" type="button" value="Clear All" />
+        </div>
+      </form>
+    </section>
+    <section>
+      <h2>Statistics</h2>
+      <p id="statsDisplayNoStudent">No students added yet</p>
+      <div id="statsDisplay" style="display: none">
+        <p>Total Students: <span id="totalStudents">0</span></p>
+        <p>Average Grade: <span id="avgGrade">0</span></p>
+        <p>Highest Grade: <span id="highestGrade">0</span></p>
+        <p>Lowest Grade: <span id="lowestGrade">0</span></p>
+        <p>Pass Rate: <span id="passRate">0</span>%</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Student List</h2>
+      <ul id="studentList"></ul>
+      <div>
+        <button id="doubleGrades">Double All Grades</button>
+        <button id="resetGrades">Reset Grades</button>
+        <button id="sortByGrade">Sort by Grade</button>
+      </div>
+    </section>
+
+    <script>
+      var storeTemp = {
+        students: [],
+      };
+      var data = {
+        students: [],
+        stats: {
+          totalStudent: 0,
+          avgGrade: 0,
+          highestGrade: 0,
+          lowestGrade: 0,
+          passRate: 0,
+        },
+      };
+
+      // elements
+      const formEl = document.getElementById("studentForm");
+      const studentListEl = document.getElementById("studentList");
+      const totalStudentsEl = document.getElementById("totalStudents");
+      const avgGradeEl = document.getElementById("avgGrade");
+      const highestGradeEl = document.getElementById("highestGrade");
+      const lowestGradeEl = document.getElementById("lowestGrade");
+      const passRateEl = document.getElementById("passRate");
+
+      const clearFormBtn = document.getElementById("clearForm");
+      const doubleGradeBtn = document.getElementById("doubleGrades");
+      const resetGradeBtn = document.getElementById("resetGrades");
+      const sortGradeBtn = document.getElementById("sortByGrade");
+
+      // dom manupulate
+      const updateStudentDOM = () => {
+        studentListEl.innerHTML = "";
+        data.students.forEach((std) => {
+          const li = document.createElement("li");
+          li.innerHTML = `${std.name}: ${std.grade} points (${gradeLetter(
+            std.grade
+          )})`;
+          const btn = document.createElement("button");
+          btn.innerHTML = "Remove";
+          btn.addEventListener("click", () => removeStudent(std._id));
+
+          li.appendChild(btn);
+          studentListEl.appendChild(li);
+        });
+        generateStats();
+      };
+
+      // helper funcs
+
+      function gradeLetter(grade) {
+        if (grade >= 90 && grade <= 100) {
+          return "A";
+        } else if (grade >= 80 && grade <= 89) {
+          return "B";
+        } else if (grade >= 70 && grade <= 79) {
+          return "C";
+        } else if (grade >= 60 && grade <= 69) {
+          return "D";
+        } else {
+          return "F";
+        }
+      }
+
+      const generateStats = () => {
+        let stats = {
+          totalStudent: 0,
+          avgGrade: 0,
+          highestGrade: 0,
+          lowestGrade: 0,
+          passRate: 0,
+        };
+        const totalStudent = data.students.length;
+
+        if (totalStudent > 0) {
+          const totalGrade = data.students.reduce(
+            (acc, std) => acc + std.grade,
+            0
+          );
+          const passingStudents = data.students.filter(
+            (std) => std.grade >= 50
+          ).length;
+
+          stats = {
+            totalStudent: totalStudent,
+            avgGrade: (totalGrade / totalStudent).toFixed(2),
+            highestGrade: Math.max(...data.students.map((std) => std.grade)),
+            lowestGrade: Math.min(...data.students.map((std) => std.grade)),
+            passRate: ((passingStudents / totalStudent) * 100).toFixed(2),
+          };
+
+          document.getElementById("statsDisplay").style.display = "";
+        } else {
+          document.getElementById("statsDisplay").style.display = "none";
+          document.getElementById("statsDisplayNoStudent").style.display = "";
+        }
+
+        totalStudentsEl.textContent = stats.totalStudent;
+        avgGradeEl.textContent = stats.avgGrade;
+        highestGradeEl.textContent = stats.highestGrade;
+        lowestGradeEl.textContent = stats.lowestGrade;
+        passRateEl.textContent = stats.passRate;
+      };
+
+      const addStudent = (name, grade) => {
+        let _id = Date.now();
+        data.students.push({ _id, name, grade });
+        updateStudentDOM();
+      };
+
+      const removeStudent = (id) => {
+        const updated = data.students.filter((std) => std._id !== id);
+        data.students = updated;
+        updateStudentDOM();
+      };
+
+      const doubleGrades = () => {
+        storeTemp.students = data.students;
+        data.students = data.students.map((std) => ({
+          ...std,
+          grade: Math.min(std.grade * 2, 100),
+        }));
+        updateStudentDOM();
+      };
+
+      const resetGrades = () => {
+        data.students = storeTemp.students;
+        updateStudentDOM();
+      };
+
+      const sortByGrades = () => {
+        const updated = data.students.sort((a, b) => b.grade - a.grade);
+        data.students = updated;
+        updateStudentDOM();
+      };
+
+      // form submit
+      formEl.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = e.target.name.value;
+        const grade = parseInt(e.target.grade.value, 10);
+
+        addStudent(name, grade);
+      });
+
+      clearFormBtn.addEventListener("click", (e) => {
+        formEl.reset();
+      });
+      doubleGradeBtn.addEventListener("click", doubleGrades);
+      resetGradeBtn.addEventListener("click", resetGrades);
+      sortGradeBtn.addEventListener("click", sortByGrades);
+    </script>
+  </body>
+</html>
